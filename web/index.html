@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="MindMitra - AI-Based Cognitive Gaming and Memory Assistance Platform">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="MindMitra">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>MindMitra</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    window._activeRecognition = null;
+    window._activeAudio = null;
+    window._speakGen = 0;
+
+    // Helper: Split long paragraphs/stories into <= 160-char sentence chunks
+    function splitIntoSpeechChunks(text, maxLen) {
+      var rawSentences = text.split(/(?<=[.!?।\n])\s+/);
+      var chunks = [];
+      for (var i = 0; i < rawSentences.length; i++) {
+        var s = rawSentences[i].trim();
+        if (!s) continue;
+        while (s.length > maxLen) {
+          var cut = s.lastIndexOf(' ', maxLen);
+          if (cut <= 0) cut = maxLen;
+          chunks.push(s.substring(0, cut).trim());
+          s = s.substring(cut).trim();
+        }
+        if (s) chunks.push(s);
+      }
+      return chunks.length > 0 ? chunks : [text];
+    }
+
+    // Helper: Play a single audio URL and return a Promise<boolean>
+    function playAudioUrl(url, myGen) {
+      return new Promise(function(resolve) {
+        if (myGen !== window._speakGen) {
+          resolve(false);
+          return;
+        }
+        var audio = new Audio();
+        audio.referrerPolicy = 'no-referrer';
+        audio.src = url;
+        window._activeAudio = audio;
+        audio.onended = function() {
+          if (window._activeAudio === audio) window._activeAudio = null;
+          resolve(true);
+        };
+        audio.onerror = function() {
+          if (window._activeAudio === audio) window._activeAudio = null;
+          resolve(false);
+        };
+        var playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(function() {
+            if (window._activeAudio === audio) window._activeAudio = null;
+            resolve(false);
+          });
+        }
+      });
+    }
+
+    // 1. Natural Text-to-Speech (TTS) for ALL Indian languages (even long stories!)
+    window.mindMitraSpeak = async function(text, lang, geminiKey, onDoneCallback) {
+      window._speakGen = (window._speakGen || 0) + 1;
+      var myGen = window._speakGen;
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      if (window._activeAudio) {
+        try {
+          window._activeAudio.pause();
+          window._activeAudio.currentTime = 0;
+        } catch (e) {}
+        window._activeAudio = null;
+      }
+
+      // Strip emojis and markdown asterisks so voice reads naturally like a human
+      var cleanText = (text || '')
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/\*/g, '')
+        .trim();
+
+      if (!cleanText) {
+        if (onDoneCallback) onDoneCallback();
+        return;
+      }
+
+      var targetLang = lang || 'en-IN';
+
+      // Automatically detect Indian language script in the AI reply so TTS speaks it natively!
+      if (/[\u0B80-\u0BFF]/.test(cleanText)) {
+        targetLang = 'ta-IN'; // Tamil
+      } else if (/[\u0D00-\u0D7F]/.test(cleanText)) {
+        targetLang = 'ml-IN'; // Malayalam
+      } else if (/[\u0C00-\u0C7F]/.test(cleanText)) {
+        targetLang = 'te-IN'; // Telugu
+      } else if (/[\u0C80-\u0CFF]/.test(cleanText)) {
+        targetLang = 'kn-IN'; // Kannada
+      } else if (/[\u0900-\u097F]/.test(cleanText)) {
+        targetLang = (lang === 'mr-IN') ? 'mr-IN' : 'hi-IN'; // Hindi / Marathi
+      } else if (/[\u0980-\u09FF]/.test(cleanText)) {
+        targetLang = (lang === 'as-IN') ? 'as-IN' : 'bn-IN'; // Bengali / Assamese
+      } else if (/[\u0A80-\u0AFF]/.test(cleanText)) {
+        targetLang = 'gu-IN'; // Gujarati
+      } else if (/[\u0A00-\u0A7F]/.test(cleanText)) {
+        targetLang = 'pa-IN'; // Punjabi
+      } else if (/[\u0B00-\u0B7F]/.test(cleanText)) {
+        targetLang = 'or-IN'; // Odia
+      } else if (/[\u0600-\u06FF]/.test(cleanText)) {
+        targetLang = 'ur-IN'; // Urdu
+      }
+
+      var voices = ('speechSynthesis' in window) ? window.speechSynthesis.getVoices() : [];
+      var langPrefix = targetLang.split('-')[0].toLowerCase();
+      var preferred = null;
+
+      if (voices && voices.length > 0) {
+        preferred = voices.find(function(v) {
+          return v.lang.toLowerCase().startsWith(langPrefix) && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Microsoft'));
+        }) || voices.find(function(v) {
+          return v.lang.toLowerCase().startsWith(langPrefix);
+        });
+      }
+
+      // If browser does NOT have a local voice for this Indian language (e.g. Tamil on Windows):
+      if (!preferred) {
+        // A. Primary: High-speed multi-sentence Google Indian Voice stream (0.2s latency, no 429 rate limits!)
+        var ttsLang = (langPrefix === 'as') ? 'bn' : langPrefix;
+        var chunks = splitIntoSpeechChunks(cleanText, 160);
+        var streamWorked = true;
+
+        for (var cIdx = 0; cIdx < chunks.length; cIdx++) {
+          if (myGen !== window._speakGen) return;
+          var chunkText = chunks[cIdx];
+          var gUrl = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + encodeURIComponent(ttsLang) + '&q=' + encodeURIComponent(chunkText);
+          var ok = await playAudioUrl(gUrl, myGen);
+          if (!ok) {
+            streamWorked = false;
+            break;
+          }
+        }
+
+        if (streamWorked) {
+          if (myGen === window._speakGen && onDoneCallback) onDoneCallback();
+          return;
+        }
+
+        // B. Secondary Fallback: Gemini Neural Audio TTS (gemini-3.8-flash-lite-tts)
+        var apiKey = (geminiKey || '').trim();
+        if (apiKey.length > 5 && myGen === window._speakGen) {
+          try {
+            var ttsUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-lite-tts:generateContent?key=' + encodeURIComponent(apiKey);
+            var ttsPayload = {
+              contents: [{ parts: [{ text: cleanText }] }],
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: {
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: 'Kore' }
+                  }
+                }
+              }
+            };
+            var resp = await fetch(ttsUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(ttsPayload)
+            });
+            if (resp.ok && myGen === window._speakGen) {
+              var data = await resp.json();
+              var inlineData = data.candidates &&
+                data.candidates[0] &&
+                data.candidates[0].content &&
+                data.candidates[0].content.parts &&
+                data.candidates[0].content.parts[0] &&
+                data.candidates[0].content.parts[0].inlineData;
+              if (inlineData && inlineData.data) {
+                var mimeType = inlineData.mimeType || 'audio/wav';
+                await playAudioUrl('data:' + mimeType + ';base64,' + inlineData.data, myGen);
+                if (myGen === window._speakGen && onDoneCallback) onDoneCallback();
+                return;
+              }
+            }
+          } catch (ttsErr) {
+            console.warn('Gemini Neural TTS error:', ttsErr);
+          }
+        }
+      }
+
+      if (!('speechSynthesis' in window)) {
+        if (onDoneCallback) onDoneCallback();
+        return;
+      }
+
+      var utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = targetLang;
+      utterance.rate = 0.95;
+      utterance.pitch = 1.05;
+      if (preferred) {
+        utterance.voice = preferred;
+      }
+
+      utterance.onend = function() {
+        if (myGen === window._speakGen && onDoneCallback) onDoneCallback();
+      };
+      utterance.onerror = function() {
+        if (myGen === window._speakGen && onDoneCallback) onDoneCallback();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+
+    window._recognitionSilenceTimer = null;
+    window._finishListenNow = null;
+
+    window.mindMitraStopSpeak = function() {
+      window._speakGen = (window._speakGen || 0) + 1;
+      if (window._recognitionSilenceTimer) {
+        clearTimeout(window._recognitionSilenceTimer);
+        window._recognitionSilenceTimer = null;
+      }
+      window._finishListenNow = null;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      if (window._activeAudio) {
+        try {
+          window._activeAudio.pause();
+          window._activeAudio.currentTime = 0;
+        } catch (e) {}
+        window._activeAudio = null;
+      }
+      if (window._activeRecognition) {
+        var rec = window._activeRecognition;
+        window._activeRecognition = null;
+        try { rec.abort(); } catch (e) {}
+      }
+    };
+
+    window.mindMitraFinishListen = function() {
+      if (window._finishListenNow) {
+        window._finishListenNow();
+      } else if (window._activeRecognition) {
+        var rec = window._activeRecognition;
+        window._activeRecognition = null;
+        try { rec.stop(); } catch (e) {}
+      }
+    };
+
+    // 2. Continuous Multi-Sentence Speech Recognition (STT) with 3.2s silence patience
+    window.mindMitraListen = function(lang, onInterimCallback, onFinalCallback, onErrorCallback) {
+      var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        onErrorCallback('Speech recognition not supported in this browser. Please use Chrome or Edge.');
+        return;
+      }
+
+      if (window._recognitionSilenceTimer) {
+        clearTimeout(window._recognitionSilenceTimer);
+        window._recognitionSilenceTimer = null;
+      }
+      window._finishListenNow = null;
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      if (window._activeRecognition) {
+        var oldRec = window._activeRecognition;
+        window._activeRecognition = null;
+        try { oldRec.abort(); } catch (e) {}
+      }
+
+      try {
+        var recognition = new SpeechRecognition();
+        window._activeRecognition = recognition;
+        recognition.lang = lang || 'en-IN';
+        recognition.interimResults = true;
+        recognition.continuous = true;
+        recognition.maxAlternatives = 5;
+
+        var committedTranscript = '';
+        var currentSessionTranscript = '';
+        var hasCompleted = false;
+
+        function getCombinedTranscript() {
+          return (committedTranscript + ' ' + currentSessionTranscript).replace(/\s+/g, ' ').trim();
+        }
+
+        function completeListening() {
+          if (hasCompleted) return;
+          hasCompleted = true;
+          if (window._recognitionSilenceTimer) {
+            clearTimeout(window._recognitionSilenceTimer);
+            window._recognitionSilenceTimer = null;
+          }
+          window._finishListenNow = null;
+          if (window._activeRecognition === recognition) {
+            window._activeRecognition = null;
+          }
+          try { recognition.stop(); } catch (e) {}
+
+          var fullText = getCombinedTranscript();
+          if (fullText.length > 0) {
+            onFinalCallback(fullText);
+          } else {
+            onErrorCallback('no-speech');
+          }
+        }
+
+        function resetSilenceTimer() {
+          if (window._recognitionSilenceTimer) {
+            clearTimeout(window._recognitionSilenceTimer);
+          }
+          // Wait 3.2 seconds after the last spoken word before sending,
+          // so 1-2 second pauses between sentences never cut off the user!
+          window._recognitionSilenceTimer = setTimeout(function() {
+            completeListening();
+          }, 3200);
+        }
+
+        window._finishListenNow = completeListening;
+
+        recognition.onresult = function(event) {
+          if (hasCompleted) return;
+          var finalParts = [];
+          var interimParts = [];
+          for (var i = 0; i < event.results.length; ++i) {
+            var res = event.results[i];
+            var seg = res[0].transcript.trim();
+            if (!seg) continue;
+            if (res.isFinal) {
+              finalParts.push(seg);
+            } else {
+              interimParts.push(seg);
+            }
+          }
+          currentSessionTranscript = (finalParts.join(' ') + ' ' + interimParts.join(' ')).replace(/\s+/g, ' ').trim();
+          var fullSoFar = getCombinedTranscript();
+          if (fullSoFar && onInterimCallback) {
+            onInterimCallback(fullSoFar);
+          }
+          resetSilenceTimer();
+        };
+
+        recognition.onerror = function(event) {
+          if (hasCompleted) return;
+          var errCode = event.error || 'Microphone error';
+          // If the user already spoke some sentences and then 'no-speech' fires during silence, send what they said!
+          if (errCode === 'no-speech' && getCombinedTranscript().length > 0) {
+            completeListening();
+            return;
+          }
+          if (errCode === 'aborted') {
+            return;
+          }
+          hasCompleted = true;
+          if (window._recognitionSilenceTimer) {
+            clearTimeout(window._recognitionSilenceTimer);
+            window._recognitionSilenceTimer = null;
+          }
+          window._finishListenNow = null;
+          onErrorCallback(errCode);
+        };
+
+        recognition.onend = function() {
+          if (hasCompleted) return;
+          // If the browser stopped recognition during a brief pause while our 3.2s silence timer is still waiting,
+          // save what was spoken so far and keep listening until the 3.2s silence timer expires!
+          if (window._recognitionSilenceTimer && window._activeRecognition === recognition) {
+            if (currentSessionTranscript.trim().length > 0) {
+              committedTranscript = getCombinedTranscript();
+              currentSessionTranscript = '';
+            }
+            try {
+              recognition.start();
+              return;
+            } catch (e) {}
+          }
+          completeListening();
+        };
+
+        recognition.start();
+      } catch (e) {
+        onErrorCallback(e.toString());
+      }
+    };
+
+    // 3. Real Conversational AI Brain: Official Google Gemini API + Free OpenAI Fallback
+    window.mindMitraAskAI = async function(messagesJsonStr, geminiKeyStr, onSuccessCallback, onErrorCallback) {
+      try {
+        var messages = JSON.parse(messagesJsonStr);
+        var apiKey = (geminiKeyStr || '').trim();
+
+        // A. If Google Gemini API Key is configured, call Official Google Gemini API!
+        if (apiKey.length > 5) {
+          var systemText = '';
+          var geminiContents = [];
+
+          for (var i = 0; i < messages.length; i++) {
+            var m = messages[i];
+            if (m.role === 'system') {
+              systemText += (systemText ? '\n' : '') + m.content;
+            } else {
+              var gRole = (m.role === 'assistant' || m.role === 'model') ? 'model' : 'user';
+              // Gemini requires alternating or valid user/model turns starting with user
+              if (geminiContents.length === 0 && gRole === 'model') {
+                continue;
+              }
+              if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === gRole) {
+                geminiContents[geminiContents.length - 1].parts[0].text += '\n' + m.content;
+              } else {
+                geminiContents.push({
+                  role: gRole,
+                  parts: [{ text: m.content }]
+                });
+              }
+            }
+          }
+
+          if (geminiContents.length === 0) {
+            geminiContents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+          }
+
+          var payload = {
+            contents: geminiContents,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 300
+            }
+          };
+          if (systemText) {
+            payload.systemInstruction = {
+              parts: [{ text: systemText }]
+            };
+          }
+
+          var modelsToTry = ['gemini-flash-lite-latest', 'gemini-3.6-flash', 'gemini-flash-latest'];
+          var lastErrorMsg = '';
+
+          for (var mIdx = 0; mIdx < modelsToTry.length; mIdx++) {
+            var modelName = modelsToTry[mIdx];
+            var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent?key=' + encodeURIComponent(apiKey);
+            try {
+              var resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              var data = await resp.json();
+              if (resp.ok && data.candidates && data.candidates.length > 0) {
+                var parts = data.candidates[0].content && data.candidates[0].content.parts;
+                if (parts && parts.length > 0 && parts[0].text) {
+                  onSuccessCallback(parts[0].text.trim());
+                  return;
+                }
+              } else if (data && data.error && data.error.message) {
+                lastErrorMsg = data.error.message;
+                // If key itself is invalid, no need to retry other models
+                if (lastErrorMsg.toLowerCase().includes('api key not valid') || resp.status === 400 || resp.status === 403) {
+                  if (resp.status !== 404) break;
+                }
+              }
+            } catch (errInner) {
+              lastErrorMsg = errInner.toString();
+            }
+          }
+
+          if (lastErrorMsg) {
+            onSuccessCallback('⚠️ Google Gemini API Message: ' + lastErrorMsg + ' (You can update your key anytime using the 🔑 Gemini Key button at the top.)');
+            return;
+          }
+        }
+
+        // B. Free AI Fallback (Pollinations OpenAI-compatible endpoint)
+        var freeResp = await fetch('https://text.pollinations.ai/openai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'openai',
+            messages: messages
+          })
+        });
+
+        if (freeResp.ok) {
+          var rawText = await freeResp.text();
+          try {
+            var parsed = JSON.parse(rawText);
+            if (parsed.choices && parsed.choices.length > 0 && parsed.choices[0].message) {
+              onSuccessCallback(parsed.choices[0].message.content.trim());
+              return;
+            }
+          } catch (_) {}
+          if (rawText && rawText.trim().length > 0) {
+            onSuccessCallback(rawText.trim());
+            return;
+          }
+        }
+
+        onErrorCallback('AI service unreachable');
+      } catch (e) {
+        onErrorCallback(e.toString());
+      }
+    };
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+import 'package:flutter/material.dart';
+
+/// Multilingual Localization Service tailored for the North Eastern Region (NER)
+/// Supports:
+/// - English ('en')
+/// - Hindi ('hi')
+/// - Assamese ('as') - primary regional language of Assam & NER
+/// - Bengali ('bn') - widely spoken across Tripura, Barak Valley & NER
+class LocalizationService {
+  LocalizationService._();
+
+  static final ValueNotifier<String> currentLanguage = ValueNotifier<String>('en');
+
+  static const Map<String, String> supportedLanguages = {
+    'en': 'English',
+    'ta': 'தமிழ் (Tamil)',
+    'hi': 'हिन्दी (Hindi)',
+    'ml': 'മലയാളം (Malayalam)',
+    'te': 'తెలుగు (Telugu)',
+    'kn': 'ಕನ್ನಡ (Kannada)',
+    'as': 'অসমীয়া (Assamese)',
+    'bn': 'বাংলা (Bengali)',
+    'mr': 'मराठी (Marathi)',
+    'gu': 'ગુજરાતી (Gujarati)',
+    'pa': 'ਪੰਜਾਬੀ (Punjabi)',
+    'or': 'ଓଡ଼ିଆ (Odia)',
+    'ur': 'اردو (Urdu)',
+  };
+
+  static void setLanguage(String code) {
+    if (supportedLanguages.containsKey(code)) {
+      currentLanguage.value = code;
+    }
+  }
+
+  static String get(String key) {
+    final lang = currentLanguage.value;
+    return _translations[lang]?[key] ?? _translations['en']?[key] ?? key;
+  }
+
+  static const Map<String, Map<String, String>> _translations = {
+    'en': {
+      // General & Nav
+      'app_title': 'MindMitra 🌿',
+      'app_subtitle': 'Your friendly daily companion',
+      'home': 'Home',
+      'games': 'Games',
+      'progress': 'Progress',
+      'help': 'Help',
+      'caregiver_mode': 'Caregiver Mode',
+      'patient_mode': 'Patient Mode',
+      'switch_to_caregiver': 'Switch to Caregiver View',
+      'switch_to_patient': 'Switch to Patient View',
+      
+      // Home
+      'daily_greeting': 'Hello, Asha Devi! 🌸',
+      'todays_activity': "Today's Recommended Activity",
+      'play_now': '▶ PLAY NOW',
+      'need_help': 'Need some help?',
+      'talk_to_mindmitra': 'Talk to MindMitra',
+      'mood_question': 'How are you feeling today?',
+      'mood_happy': '😊 Happy',
+      'mood_calm': '🌿 Calm',
+      'mood_okay': '😐 Okay',
+      'mood_sad': '🌧️ Low',
+      'mood_saved': 'Thank you! Your mood is recorded.',
+      'emergency_call': 'Emergency / Caregiver Call',
+
+      // Games Menu
+      'choose_game': 'Choose a Game',
+      'games_subtitle': 'A gentle activity for your mind. Not a medical test.',
+      'memory_game': 'Memory Match',
+      'sequence_game': 'Sequence Game',
+      'attention_game': 'Attention Game',
+      'pattern_game': 'Pattern Game',
+      'listen_speak_game': 'Listen & Speak',
+      'voice_talk_game': 'Voice Riddle & Talk',
+      'memory_desc': 'Match pairs of gentle symbols',
+      'sequence_desc': 'Watch and repeat the gentle colors',
+      'attention_desc': 'Tap only when the star appears',
+      'pattern_desc': 'Find what comes next in the pattern',
+      'start_game': 'Start Game',
+      'play_again': 'Play Again',
+      'back_to_menu': 'Back to Menu',
+      'well_done': 'Well Done! 🎉',
+      'current_level': 'Level',
+
+      // Progress & Caregiver
+      'cognitive_health_overview': '🧠 Cognitive Health Overview',
+      'overall_score': 'Cognitive Score',
+      'overall_status': 'Stable & Active Engagement',
+      'memory_index': 'Memory Recall',
+      'attention_index': 'Sustained Attention',
+      'sequence_index': 'Working Sequence',
+      'pattern_index': 'Visual Pattern',
+      'processing_speed': 'Processing Speed',
+      'streak_days': 'Day Streak',
+      'sessions_completed': 'Sessions Done',
+      'recent_sessions': 'Recent Activity Sessions',
+      'no_sessions_yet': 'No game sessions recorded yet. Play a game to see your progress!',
+      'caregiver_title': 'Caregiver Monitoring Insights',
+      'linked_caregiver': 'Linked Caregiver',
+      'patient_name': 'Patient Profile',
+      'export_report': '📥 Share Caregiver Summary',
+      'sync_status_online': 'Synced with Cloud',
+      'sync_status_offline': 'Stored Safely Offline',
+
+      // Help & Voice
+      'voice_assistant_title': '🔊 Voice Assistant (MindMitra Saathi)',
+      'tap_to_speak': 'Tap to Speak',
+      'listening': 'Listening to you...',
+      'speak_instruction': 'Tap the big microphone and speak naturally in your language.',
+      'quick_voice_commands': 'Or Tap Quick Prompts:',
+      'cmd_start_memory': '▶ "Start Memory Game"',
+      'cmd_start_sequence': '🔢 "Start Sequence Game"',
+      'cmd_how_am_i': '📈 "How is my progress today?"',
+      'cmd_call_caregiver': '📞 "Call my caregiver"',
+      'caregiver_contacts': 'Direct Contacts',
+      'call_caregiver_btn': '📞 Call Caregiver (Rahul)',
+      'call_doctor_btn': '🩺 Call Doctor (Dr. B. K. Sarma)',
+      'call_helpline_btn': '🆘 Senior Helpline (14567)',
+    },
+
+    'hi': {
+      // General & Nav
+      'app_title': 'माइंडमित्र 🌿',
+      'app_subtitle': 'आपका प्यारा दैनिक साथी',
+      'home': 'मुख्य पृष्ठ',
+      'games': 'खेल',
+      'progress': 'प्रगति',
+      'help': 'सहायता',
+      'caregiver_mode': 'देखभालकर्ता मोड',
+      'patient_mode': 'मरीज मोड',
+      'switch_to_caregiver': 'देखभालकर्ता देखें',
+      'switch_to_patient': 'मरीज दृश्य देखें',
+
+      // Home
+      'daily_greeting': 'नमस्ते, आशा देवी जी! 🌸',
+      'todays_activity': 'आज की अनुशंसित गतिविधि',
+      'play_now': '▶ अभी खेलें',
+      'need_help': 'कोई सहायता चाहिए?',
+      'talk_to_mindmitra': 'माइंडमित्र से बात करें',
+      'mood_question': 'आज आप कैसा महसूस कर रहे हैं?',
+      'mood_happy': '😊 खुश',
+      'mood_calm': '🌿 शांत',
+      'mood_okay': '😐 ठीक',
+      'mood_sad': '🌧️ उदास',
+      'mood_saved': 'धन्यवाद! आपका मूड दर्ज हो गया है।',
+      'emergency_call': 'आपातकालीन / देखभालकर्ता कॉल',
+
+      // Games Menu
+      'choose_game': 'एक खेल चुनें',
+      'games_subtitle': 'आपके मस्तिष्क के लिए एक सहज गतिविधि। कोई परीक्षा नहीं।',
+      'memory_game': 'स्मृति खेल (Memory)',
+      'sequence_game': 'क्रम खेल (Sequence)',
+      'attention_game': 'ध्यान खेल (Attention)',
+      'pattern_game': 'पैटर्न खेल (Pattern)',
+      'listen_speak_game': 'सुनो और बोलो (Listen & Speak)',
+      'voice_talk_game': 'पहेली और आवाज़ (Voice Riddle)',
+      'memory_desc': 'सुंदर चित्रों के जोड़े मिलाएं',
+      'sequence_desc': 'रंगों के क्रम को याद रखें',
+      'attention_desc': 'केवल तारे ⭐ के दिखने पर टैप करें',
+      'pattern_desc': 'पैटर्न में अगला आकार पहचानें',
+      'start_game': 'खेल शुरू करें',
+      'play_again': 'फिर से खेलें',
+      'back_to_menu': 'मेन्यू पर वापस जाएं',
+      'well_done': 'शाबाश! बहुत बढ़िया! 🎉',
+      'current_level': 'स्तर',
+
+      // Progress & Caregiver
+      'cognitive_health_overview': '🧠 मानसिक स्वास्थ्य अवलोकन',
+      'overall_score': 'संज्ञानात्मक स्कोर',
+      'overall_status': 'स्थिर और सक्रिय अभ्यास',
+      'memory_index': 'स्मृति स्मरण',
+      'attention_index': 'एकाग्रता / ध्यान',
+      'sequence_index': 'क्रमबद्धता',
+      'pattern_index': 'पैटर्न समझ',
+      'processing_speed': 'प्रतिक्रिया गति',
+      'streak_days': 'लगातार दिन',
+      'sessions_completed': 'सत्र पूरे किए',
+      'recent_sessions': 'हाल की गतिविधियां',
+      'no_sessions_yet': 'अभी कोई खेल नहीं खेला गया है। अपनी प्रगति देखने के लिए खेलें!',
+      'caregiver_title': 'देखभालकर्ता निगरानी डैशबोर्ड',
+      'linked_caregiver': 'जुड़े देखभालकर्ता',
+      'patient_name': 'मरीज विवरण',
+      'export_report': '📥 सारांश रिपोर्ट साझा करें',
+      'sync_status_online': 'क्लाउड से सुरक्षित जुड़ा है',
+      'sync_status_offline': 'ऑफ़लाइन सुरक्षित संग्रहीत',
+
+      // Help & Voice
+      'voice_assistant_title': '🔊 आवाज़ साथी (माइंडमित्र)',
+      'tap_to_speak': 'बोलने के लिए दबाएं',
+      'listening': 'सुन रहे हैं...',
+      'speak_instruction': 'माइक बटन दबाएं और अपनी भाषा में आराम से बोलें।',
+      'quick_voice_commands': 'या इन पर सीधे टैप करें:',
+      'cmd_start_memory': '▶ "स्मृति खेल शुरू करो"',
+      'cmd_start_sequence': '🔢 "क्रम खेल शुरू करो"',
+      'cmd_how_am_i': '📈 "आज मेरी प्रगति कैसी है?"',
+      'cmd_call_caregiver': '📞 "देखभालकर्ता को कॉल करो"',
+      'caregiver_contacts': 'सीधे संपर्क सूत्र',
+      'call_caregiver_btn': '📞 देखभालकर्ता को कॉल (राहुल)',
+      'call_doctor_btn': '🩺 डॉक्टर को कॉल (डॉ. बी. के. शर्मा)',
+      'call_helpline_btn': '🆘 वरिष्ठ हेल्पलाइन (14567)',
+    },
+
+    'as': {
+      // Assamese (NER Focus)
+      'app_title': 'মাইণ্ডমিত্ৰ 🌿',
+      'app_subtitle': 'আপোনাৰ মৰমৰ দৈনিক সংগী',
+      'home': 'ঘৰ',
+      'games': 'খেলসমূহ',
+      'progress': 'উন্নতি',
+      'help': 'সহায়',
+      'caregiver_mode': 'অভিভাৱক ম’ড',
+      'patient_mode': 'ৰোগী ম’ড',
+      'switch_to_caregiver': 'অভিভাৱক ডেশ্বব’ৰ্ড',
+      'switch_to_patient': 'ৰোগী স্ক্ৰীণলৈ যাওক',
+
+      // Home
+      'daily_greeting': 'নমস্কাৰ, আশা দেৱী! 🌸',
+      'todays_activity': 'আজিৰ নিৰ্বাচিত কাৰ্যসূচী',
+      'play_now': '▶ এতিয়াই খেলক',
+      'need_help': 'কিবা সহায় লাগিব নেকি?',
+      'talk_to_mindmitra': 'মাইণ্ডমিত্ৰৰ লগত কথা পাতক',
+      'mood_question': 'আজি আপোনাৰ মনটো কেনে লাগিছে?',
+      'mood_happy': '😊 ভাল/আনন্দ',
+      'mood_calm': '🌿 শান্ত',
+      'mood_okay': '😐 সাধাৰণ',
+      'mood_sad': '🌧️ দুখ/অশান্ত',
+      'mood_saved': 'ধন্যবাদ! আপোনাৰ অনুভৱ সংৰক্ষণ কৰা হৈছে।',
+      'emergency_call': 'জৰুৰীকালীন / অভিভাৱকৰ নম্বৰ',
+
+      // Games Menu
+      'choose_game': 'এটা খেল বাছক',
+      'games_subtitle': 'আপোনাৰ মনটো সতেজ ৰাখিবলৈ এক সহজ কাৰ্যসূচী।',
+      'memory_game': 'স্মৃতি খেল (Memory)',
+      'sequence_game': 'ক্ৰমিক খেল (Sequence)',
+      'attention_game': 'মনোযোগ খেল (Attention)',
+      'pattern_game': 'নকশা খেল (Pattern)',
+      'listen_speak_game': 'শুনক আৰু কওক (Listen & Speak)',
+      'voice_talk_game': 'সাঁথৰ আৰু মাত (Voice Riddle)',
+      'memory_desc': 'একে ধৰণৰ ছবিৰ যোৰ মিলাওক',
+      'sequence_desc': 'ৰংবোৰৰ ক্ৰম মনত ৰাখক',
+      'attention_desc': 'কেৱল তৰা ⭐ ওলালে টিপক',
+      'pattern_desc': 'নকশাত পিছৰ আকৃতি চিনাক্ত কৰক',
+      'start_game': 'খেল আৰম্ভ কৰক',
+      'play_again': 'পুনৰ খেলক',
+      'back_to_menu': 'মেনুলৈ উভতি যাওক',
+      'well_done': 'বৰ ধুনীয়া! সফল হ’ল! 🎉',
+      'current_level': 'স্তৰ',
+
+      // Progress & Caregiver
+      'cognitive_health_overview': '🧠 মানসিক স্বাস্থ্যৰ অগ্ৰগতি',
+      'overall_score': 'মগজুৰ স্বাস্থ্য নম্বৰ',
+      'overall_status': 'স্থিৰ আৰু নিয়মীয়া অনুশীলন',
+      'memory_index': 'স্মৃতি শক্তি',
+      'attention_index': 'মনোযোগ শক্তি',
+      'sequence_index': 'ক্ৰমিক ধাৰণা',
+      'pattern_index': 'নকশা বোধ',
+      'processing_speed': 'সঁহাৰিৰ গতি',
+      'streak_days': 'ধাৰাবাহিক দিন',
+      'sessions_completed': 'সম্পূৰ্ণ কৰা খেল',
+      'recent_sessions': 'শেহতীয়া অনুশীলন তথ্য',
+      'no_sessions_yet': 'এতিয়ালৈকে কোনো খেল খেলা হোৱা নাই।',
+      'caregiver_title': 'অভিভাৱক পৰ্যবেক্ষণ ফলক',
+      'linked_caregiver': 'সংযুক্ত অভিভাৱক',
+      'patient_name': 'ৰোগীৰ পৰিচয়',
+      'export_report': '📥 প্ৰতিবেদন ভাগ-বতৰা কৰক',
+      'sync_status_online': 'ইণ্টাৰনেটত সুৰক্ষিতভাৱে সংৰক্ষিত',
+      'sync_status_offline': 'অফলাইনত সুৰক্ষিতভাৱে সঞ্চিত',
+
+      // Help & Voice
+      'voice_assistant_title': '🔊 কণ্ঠ সংগী (মাইণ্ডমিত্ৰ)',
+      'tap_to_speak': 'কথা ক’বলৈ স্পৰ্শ কৰক',
+      'listening': 'শুনি থকা হৈছে...',
+      'speak_instruction': 'মাইক্ৰ’ফোনটো টিপি আপোনাৰ নিজৰ ভাষাত কথা কওক।',
+      'quick_voice_commands': 'বা তলৰ বিকল্পত টিপক:',
+      'cmd_start_memory': '▶ "স্মৃতি খেল আৰম্ভ কৰা"',
+      'cmd_start_sequence': '🔢 "ক্ৰমিক খেল আৰম্ভ কৰা"',
+      'cmd_how_am_i': '📈 "আজি মোৰ খেল কেনে হ’ল?"',
+      'cmd_call_caregiver': '📞 "ৰাহুলক ফোন কৰা"',
+      'caregiver_contacts': 'পোনপটীয়া যোগাযোগ',
+      'call_caregiver_btn': '📞 অভিভাৱকলৈ ফোন (ৰাহুল)',
+      'call_doctor_btn': '🩺 চিকিৎসকক ফোন (ডাঃ বি কে শৰ্মা)',
+      'call_helpline_btn': '🆘 জ্যেষ্ঠ হেল্পলাইন (14567)',
+    },
+
+    'bn': {
+      // Bengali (NER Focus - Tripura & Barak Valley)
+      'app_title': 'মাইন্ডমিত্র 🌿',
+      'app_subtitle': 'আপনার প্রিয় দৈনন্দিন সঙ্গী',
+      'home': 'হোম',
+      'games': 'খেলা',
+      'progress': 'অগ্রগতি',
+      'help': 'সাহায্য',
+      'caregiver_mode': 'তত্ত্বাবধায়ক মোড',
+      'patient_mode': 'রোগী মোড',
+      'switch_to_caregiver': 'তত্ত্বাবধায়ক ড্যাশবোর্ড',
+      'switch_to_patient': 'রোগীর পৃষ্ঠা',
+
+      // Home
+      'daily_greeting': 'নমস্কার, আশা দেবী! 🌸',
+      'todays_activity': 'আজকের বিশেষ মানসিক অনুশীলন',
+      'play_now': '▶ এখনই খেলুন',
+      'need_help': 'কোনো সাহায্য লাগবে?',
+      'talk_to_mindmitra': 'মাইন্ডমিত্রের সাথে কথা বলুন',
+      'mood_question': 'আজ আপনার মন কেমন আছে?',
+      'mood_happy': '😊 ভালো / আনন্দ',
+      'mood_calm': '🌿 শান্ত',
+      'mood_okay': '😐 সাধারণ',
+      'mood_sad': '🌧️ মন খারাপ',
+      'mood_saved': 'ধন্যবাদ! আপনার অনুভূতির তথ্য জমা হয়েছে।',
+      'emergency_call': 'জরুরি / অভিভাবক কল',
+
+      // Games Menu
+      'choose_game': 'একটি খেলা বাছুন',
+      'games_subtitle': 'মনের শান্তির জন্য একটি সহজ খেলা। কোনো পরীক্ষা নয়।',
+      'memory_game': 'স্মৃতি খেলা (Memory)',
+      'sequence_game': 'ধারাবাহিক খেলা (Sequence)',
+      'attention_game': 'মনোযোগ খেলা (Attention)',
+      'pattern_game': 'প্যাটার্ন খেলা (Pattern)',
+      'listen_speak_game': 'শুনুন ও বলুন (Listen & Speak)',
+      'voice_talk_game': 'ধাঁধা ও কথা (Voice Riddle)',
+      'memory_desc': 'সুন্দর ছবির জোড়া মেলান',
+      'sequence_desc': 'রঙের ক্রম মনে রাখুন',
+      'attention_desc': 'শুধুমাত্র তারা ⭐ দেখা দিলে চাপুন',
+      'pattern_desc': 'পরের আকৃতিটি খুঁজে নিন',
+      'start_game': 'খেলা শুরু করুন',
+      'play_again': 'আবার খেলুন',
+      'back_to_menu': 'মেনুতে ফিরে যান',
+      'well_done': 'চমৎকার! দারুণ হয়েছে! 🎉',
+      'current_level': 'স্তর',
+
+      // Progress & Caregiver
+      'cognitive_health_overview': '🧠 মানসিক স্বাস্থ্য পর্যবেক্ষণ',
+      'overall_score': 'জ্ঞানীয় সক্ষমতা স্কোর',
+      'overall_status': 'স্থিতিশীল ও নিয়মিত অনুশীলন',
+      'memory_index': 'স্মরণশক্তি',
+      'attention_index': 'মনোযোগ ও একাগ্রতা',
+      'sequence_index': 'ধারাবাহিক ক্ষমতা',
+      'pattern_index': 'যুক্তি ও নকশা',
+      'processing_speed': 'প্রতিক্রিয়া গতি',
+      'streak_days': 'ধারাবাহিক দিন',
+      'sessions_completed': 'সম্পন্ন সেশন',
+      'recent_sessions': 'সাম্প্রতিক অনুশীলনের বিবরণ',
+      'no_sessions_yet': 'এখনও কোনো খেলা সম্পন্ন হয়নি।',
+      'caregiver_title': 'তত্ত্বাবধায়ক পর্যবেক্ষণ ড্যাশবোর্ড',
+      'linked_caregiver': 'সংযুক্ত অভিভাবক',
+      'patient_name': 'রোগীর তথ্য',
+      'export_report': '📥 সারাংশ রিপোর্ট শেয়ার করুন',
+      'sync_status_online': 'ক্লাউডে নিরাপদে সংরক্ষিত',
+      'sync_status_offline': 'অফলাইনে নিরাপদে জমা আছে',
+
+      // Help & Voice
+      'voice_assistant_title': '🔊 ভয়েস সহকারী (মাইন্ডমিত্র)',
+      'tap_to_speak': 'কথা বলতে স্পর্শ করুন',
+      'listening': 'শুনছি...',
+      'speak_instruction': 'মাইক্রোফোনে চাপুন এবং আপনার ভাষায় কথা বলুন।',
+      'quick_voice_commands': 'অথবা সরাসরি চাপুন:',
+      'cmd_start_memory': '▶ "স্মৃতি খেলা শুরু করো"',
+      'cmd_start_sequence': '🔢 "ক্রম খেলা শুরু করো"',
+      'cmd_how_am_i': '📈 "আজকের অগ্রগতি কেমন?"',
+      'cmd_call_caregiver': '📞 "অভিভাবককে ফোন করো"',
+      'caregiver_contacts': 'সরাসরি যোগাযোগ',
+      'call_caregiver_btn': '📞 অভিভাবককে ফোন (রাহুল)',
+      'call_doctor_btn': '🩺 ডাক্তারকে ফোন (ডাঃ বি কে শর্মা)',
+      'call_helpline_btn': '🆘 প্রবীণ হেল্পলাইন (14567)',
+    },
+  };
+}
